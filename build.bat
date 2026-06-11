@@ -8,7 +8,8 @@
 
 cd /d "%~dp0"
 
-set PYTHON="C:\Users\shw09\AppData\Local\Programs\Python\Python314\python.exe"
+:: PATH에서 python 자동 탐색 (개인 경로 하드코딩 없음)
+set PYTHON=python
 
 echo.
 echo  ====================================================
@@ -17,8 +18,10 @@ echo  ====================================================
 echo.
 
 :: Python 확인
-if not exist %PYTHON% (
-    echo  [오류] Python 을 찾을 수 없습니다: %PYTHON%
+%PYTHON% --version > nul 2>&1
+if errorlevel 1 (
+    echo  [오류] Python 을 찾을 수 없습니다.
+    echo  Python 3.11 이상 설치 후 PATH 에 등록하세요.
     pause
     exit /b 1
 )
