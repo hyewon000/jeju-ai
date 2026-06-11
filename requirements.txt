@@ -5,3 +5,8 @@ python-docx>=1.1.0
 gunicorn>=22.0.0
 tavily-python>=0.3.0
 requests>=2.31.0
+# exe 패키징용 (PyInstaller 빌드 시 필요)
+pystray>=0.19.5
+Pillow>=10.0.0
+cryptography>=42.0.0
+pyinstaller>=6.0.0

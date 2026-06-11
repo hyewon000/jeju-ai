@@ -4,7 +4,7 @@ app.py — 정책사업 사전검토 보고서 자동 생성 시스템 (Flask)
 
 import os
 import re
-
+import sys
 import json
 
 from flask import (
@@ -28,7 +28,14 @@ import word_export
 
 load_dotenv()
 
-app = Flask(__name__)
+# PyInstaller 번들 모드에서 templates/static을 _MEIPASS에서 찾는다
+_APP_DIR = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
+
+app = Flask(
+    __name__,
+    template_folder=os.path.join(_APP_DIR, "templates"),
+    static_folder=os.path.join(_APP_DIR, "static"),
+)
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", os.urandom(24))
 app.config["TEMPLATES_AUTO_RELOAD"] = True
 
