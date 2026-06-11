@@ -31,6 +31,7 @@ __pycache__/
 .Python
 *.egg-info/
 dist/
+!dist/정책사업보고서.exe
 build/
 *.egg
 
