@@ -400,6 +400,16 @@ def delete(report_id: int):
     return redirect(url_for("history"))
 
 
+@app.route("/standalone")
+def standalone():
+    """단일 HTML 파일 버전을 HTTP 컨텍스트로 제공 (CORS 우회)."""
+    import pathlib
+    html_path = pathlib.Path(__file__).parent / "policy-report.html"
+    if not html_path.exists():
+        abort(404)
+    return Response(html_path.read_text(encoding="utf-8"), mimetype="text/html")
+
+
 @app.route("/download-word/<int:report_id>")
 def download_word(report_id: int):
     report = db.get_report_by_id(report_id)

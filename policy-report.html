@@ -142,6 +142,13 @@ textarea{resize:vertical;min-height:100px}
 /* ── 반응형 ─── */
 @media(max-width:600px){.form-grid{grid-template-columns:1fr}.info-grid{grid-template-columns:1fr 1fr}.download-bar{justify-content:center}}
 
+/* ── file:// 경고 배너 ─── */
+.file-banner{background:#7f1d1d;color:#fff;padding:14px 24px;font-size:13px;line-height:1.7}
+.file-banner strong{font-size:14px;display:block;margin-bottom:4px}
+.file-banner code{background:rgba(255,255,255,.15);padding:3px 8px;border-radius:4px;font-family:monospace;font-size:13px;cursor:pointer;user-select:all}
+.file-banner code:hover{background:rgba(255,255,255,.25)}
+.file-banner .copy-hint{font-size:11px;opacity:.75;margin-left:6px}
+
 /* ── 인쇄 ─── */
 @media print{
   .app-header,.card-header button,.btn-row,.download-bar,#input-area,#progress-area{display:none!important}
@@ -153,6 +160,22 @@ textarea{resize:vertical;min-height:100px}
 </style>
 </head>
 <body>
+
+<!-- file:// CORS 경고 배너 (JS로 표시 제어) -->
+<div id="file-protocol-banner" class="file-banner" style="display:none">
+  <strong>⚠ 브라우저 보안 정책(CORS)으로 인해 이 상태에서는 API 호출이 차단됩니다.</strong>
+  <code>file://</code>로 직접 열면 외부 API(Claude·Tavily)가 모두 차단됩니다. 아래 방법 중 하나로 실행하세요.
+  <br><br>
+  <b>방법 1 — 이미 실행 중인 Flask 서버 이용 (권장)</b><br>
+  &nbsp;&nbsp;&nbsp;→ <a href="http://localhost:5000/standalone" target="_blank" style="color:#fca5a5">http://localhost:5000/standalone</a> 접속
+  <br><br>
+  <b>방법 2 — Python 내장 HTTP 서버</b><br>
+  &nbsp;&nbsp;&nbsp;이 파일이 있는 폴더에서:&nbsp;
+  <code onclick="navigator.clipboard.writeText('python -m http.server 8080')">python -m http.server 8080</code>
+  <span class="copy-hint">(클릭하면 복사됩니다)</span>
+  <br>
+  &nbsp;&nbsp;&nbsp;→ 그 다음 <a href="http://localhost:8080/policy-report.html" target="_blank" style="color:#fca5a5">http://localhost:8080/policy-report.html</a> 접속
+</div>
 
 <!-- 헤더 -->
 <header class="app-header">
@@ -970,12 +993,15 @@ function fillSample() {
    초기화
 ═══════════════════════════════════════════════════════════ */
 window.addEventListener('DOMContentLoaded', () => {
-  const keys = getKeys();
-  if (!keys.claude) {
-    // 첫 방문: 설정 화면 자동 표시
-    openSettings();
+  // file:// 프로토콜 감지 → CORS 차단 안내
+  if (location.protocol === 'file:') {
+    document.getElementById('file-protocol-banner').style.display = 'block';
+    document.getElementById('generate-btn').disabled = true;
+    document.getElementById('generate-btn').title = 'HTTP 서버로 실행해야 API 호출이 가능합니다';
   }
-  // 법령 API CORS 경고 표시
+
+  const keys = getKeys();
+  if (!keys.claude) openSettings();
   document.getElementById('law-cors-warn').style.display = 'block';
 });
 </script>
