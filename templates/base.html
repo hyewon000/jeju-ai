@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}정책사업 사전검토 시스템{% endblock %} — 고양특례시</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <div class="header-inner">
+        <div class="logo">
+          <span class="logo-badge">고양특례시</span>
+          <span class="logo-title">정책사업 사전검토 시스템</span>
+        </div>
+        <nav class="site-nav">
+          <a href="{{ url_for('index') }}"
+             class="nav-link {% if request.endpoint == 'index' %}active{% endif %}">
+            보고서 생성
+          </a>
+          <a href="{{ url_for('history') }}"
+             class="nav-link {% if request.endpoint == 'history' %}active{% endif %}">
+            이력 조회
+          </a>
+        </nav>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <div class="container">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">{{ message }}</div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p>
+        본 시스템은 Claude AI 기반 내부 검토 초안 자동 생성 도구입니다.<br>
+        <strong>법령 조문 번호와 타 지자체 사례는 반드시 담당자가 직접 확인 후 활용하십시오.</strong>
+      </p>
+    </div>
+  </footer>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>

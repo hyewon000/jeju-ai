@@ -1,0 +1,297 @@
+{% extends "base.html" %}
+
+{% block title %}{{ report.project_name }} — 검토 보고서{% endblock %}
+
+{% block content %}
+
+{# ─── 보고서 헤더 ─── #}
+<div class="result-header card">
+  <div class="result-header-left">
+    <div class="result-title-row">
+      <a href="{{ url_for('history') }}" class="btn btn-ghost btn-sm">← 목록</a>
+      <h2 class="result-title">{{ report.project_name }}</h2>
+    </div>
+    <div class="result-meta">
+      {% if report.project_type %}<span class="meta-item">{{ report.project_type }}</span>{% endif %}
+      {% if report.budget %}<span class="meta-item">{{ "{:,}".format(report.budget) }}원</span>{% endif %}
+      {% if report.period %}<span class="meta-item">{{ report.period }}</span>{% endif %}
+      {% if report.created_at %}<span class="meta-item">{{ report.created_at }}</span>{% endif %}
+    </div>
+  </div>
+  <div class="result-header-actions">
+    {% if report.id %}
+      <a href="{{ url_for('download_word', report_id=report.id) }}" class="btn btn-primary btn-sm">Word (수정용)</a>
+      <button onclick="window.print()" class="btn btn-outline btn-sm">PDF 저장 (인쇄)</button>
+      <a href="{{ url_for('download', report_id=report.id) }}" class="btn btn-outline btn-sm">TXT</a>
+      <form method="POST" action="{{ url_for('delete', report_id=report.id) }}" style="display:inline"
+            onsubmit="return confirm('이 보고서를 삭제하시겠습니까?')">
+        <button type="submit" class="btn btn-danger btn-sm">삭제</button>
+      </form>
+    {% endif %}
+  </div>
+</div>
+
+{# ─── 위험도 대시보드 ─── #}
+<div class="risk-dashboard card">
+  <div class="risk-panel">
+    <div class="risk-panel-label">AI 검토의견</div>
+    {% if report.risk_level == '고' %}
+      <div class="risk-level-badge risk-high">고위험</div>
+    {% elif report.risk_level == '저' %}
+      <div class="risk-level-badge risk-low">저위험</div>
+    {% else %}
+      <div class="risk-level-badge risk-mid">중위험</div>
+    {% endif %}
+    <div class="risk-detail">
+      {% if ai_judgment %}
+        종합 판단: <strong>{{ ai_judgment }}</strong>
+      {% else %}
+        종합 검토의견 기반 자동 산정
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="risk-divider"></div>
+
+  <div class="risk-panel">
+    <div class="risk-panel-label">담당자 체크리스트</div>
+    <div class="risk-level-badge" id="cl-badge">
+      {% if report.checklist_risk == '고' %}고위험
+      {% elif report.checklist_risk == '저' %}저위험
+      {% else %}중위험{% endif %}
+    </div>
+    <div class="risk-detail">
+      체크 항목: <strong id="cl-count">0</strong> / 12개 &nbsp;|&nbsp;
+      점수 기반 자동 산정
+    </div>
+  </div>
+</div>
+
+{# ─── ① 사전 검토 체크리스트 ─── #}
+<div class="accordion-item" id="precheck-accordion">
+  <button class="accordion-header" onclick="toggleSection(this)" type="button">
+    <span>① 사전 검토 체크리스트</span>
+    <span class="accordion-chevron">▲</span>
+  </button>
+  <div class="accordion-body">
+    {% if precheck_items %}
+    <div class="table-wrap">
+      <table class="report-table precheck-table">
+        <thead>
+          <tr>
+            <th style="width:140px">검토 항목</th>
+            <th style="width:120px">적용 조건</th>
+            <th style="width:100px">AI 예상 판단</th>
+            <th>판단 근거</th>
+            <th style="width:80px;text-align:center">실제 체크</th>
+            <th style="width:150px">비고</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in precheck_items %}
+          <tr>
+            <td><strong>{{ row.item }}</strong></td>
+            <td style="font-size:12px;color:var(--text-muted)">{{ row.condition }}</td>
+            <td>
+              {% if row.ai_judgment == '해당' %}
+                <span class="judgment-badge judgment-required">해당</span>
+              {% elif row.ai_judgment == '해당 없음' %}
+                <span class="judgment-badge judgment-none">해당 없음</span>
+              {% else %}
+                <span class="judgment-badge judgment-check">확인 필요</span>
+              {% endif %}
+            </td>
+            <td class="text-muted" style="font-size:12px">{{ row.ai_reason }}</td>
+            <td style="text-align:center">
+              <input type="checkbox" class="pre-check" style="width:16px;height:16px;cursor:pointer;accent-color:var(--primary)"
+                data-id="pre_{{ loop.index }}"
+                {% if checklist_state.get('pre_' ~ loop.index) %}checked{% endif %}
+                onchange="savePrecheck({{ report.id if report.id else 0 }})">
+            </td>
+            <td>
+              <input type="text" class="pre-note" data-id="note_{{ loop.index }}"
+                value="{{ checklist_state.get('note_' ~ loop.index, '') }}"
+                placeholder="비고"
+                style="width:100%;border:1px solid var(--border);border-radius:4px;padding:3px 8px;font-size:12px;font-family:inherit"
+                oninput="scheduleNoteSave({{ report.id if report.id else 0 }})">
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div style="margin-top:10px;font-size:12px;color:var(--text-muted)">
+      ※ AI 예상 판단은 입력 정보 기반 초안입니다. 실제 체크 및 비고는 담당자가 직접 확인 후 기재하세요.
+    </div>
+    {% else %}
+    <p class="text-muted" style="font-size:13px">사전 검토 항목이 생성되지 않았습니다. (신규 보고서에서는 자동 생성됩니다)</p>
+    {% endif %}
+  </div>
+</div>
+
+{# ─── 담당자 체크리스트 ─── #}
+<div class="accordion-item">
+  <button class="accordion-header" onclick="toggleSection(this)" type="button">
+    <span>담당자 위험도 체크리스트</span>
+    <span class="accordion-chevron">▲</span>
+  </button>
+  <div class="accordion-body">
+    <p class="checklist-desc">해당 항목에 체크할수록 위험도가 높아집니다. (0-3점: 저 / 4-7점: 중 / 8-12점: 고)</p>
+    <div class="checklist-grid">
+      {% for group_name, items in checklist_groups %}
+      <div class="checklist-group">
+        <div class="checklist-group-title">{{ group_name }}</div>
+        {% for item_id, item_label in items %}
+        <label class="checklist-item">
+          <input type="checkbox" class="cl-check" data-id="{{ item_id }}"
+            {% if checklist_state.get(item_id) %}checked{% endif %}
+            onchange="updateChecklist()">
+          <span>{{ item_label }}</span>
+        </label>
+        {% endfor %}
+      </div>
+      {% endfor %}
+    </div>
+    <div class="checklist-footer">
+      <div class="cl-score-display">
+        위험 점수 <strong id="cl-score">0</strong>점 → 위험도: <strong id="cl-risk-text">중위험</strong>
+      </div>
+      {% if report.id %}
+      <button onclick="saveChecklist({{ report.id }})" class="btn btn-outline btn-sm" id="cl-save-btn">
+        저장
+      </button>
+      <span id="cl-save-msg" class="cl-save-msg"></span>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{# ─── AI 면책 고지 ─── #}
+<div class="ai-notice">
+  본 보고서는 <strong>Claude AI가 자동 생성한 내부 검토 초안</strong>입니다.
+  법령 조문 번호와 타 지자체 사례는 담당자가 직접 확인 후 활용하십시오.
+</div>
+
+{# ─── 섹션 아코디언 ─── #}
+{% for key, label in section_labels %}
+  {% set content = report[key] %}
+  <div class="accordion-item {% if content and '[생성 오류]' in content %}accordion-error{% endif %}">
+    <button class="accordion-header" onclick="toggleSection(this)" type="button">
+      <span>{{ label }}</span>
+      <span class="accordion-chevron">▲</span>
+    </button>
+    <div class="accordion-body">
+      {{ content | table_html | safe }}
+    </div>
+  </div>
+{% endfor %}
+
+{# ─── 하단 액션 ─── #}
+<div class="result-footer">
+  <a href="{{ url_for('index') }}" class="btn btn-outline">새 보고서 생성</a>
+  <a href="{{ url_for('history') }}" class="btn btn-ghost">목록으로</a>
+  {% if report.id %}
+    <a href="{{ url_for('download_word', report_id=report.id) }}" class="btn btn-primary">Word 다운로드 (수정용)</a>
+    <button onclick="window.print()" class="btn btn-outline">PDF 저장 (출력/보고용)</button>
+  {% endif %}
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const RISK_THRESHOLDS = { low: 3, mid: 7 };
+
+  function getRiskInfo(score) {
+    if (score <= RISK_THRESHOLDS.low) return { level: '저', label: '저위험', cls: 'risk-low' };
+    if (score <= RISK_THRESHOLDS.mid) return { level: '중', label: '중위험', cls: 'risk-mid' };
+    return { level: '고', label: '고위험', cls: 'risk-high' };
+  }
+
+  function updateChecklist() {
+    const checks = document.querySelectorAll('.cl-check');
+    let score = 0;
+    checks.forEach(c => { if (c.checked) score++; });
+
+    const risk = getRiskInfo(score);
+    const badge = document.getElementById('cl-badge');
+    badge.textContent = risk.label;
+    badge.className = 'risk-level-badge ' + risk.cls;
+
+    document.getElementById('cl-count').textContent = score;
+    document.getElementById('cl-score').textContent = score;
+    document.getElementById('cl-risk-text').textContent = risk.label;
+  }
+
+  let _noteSaveTimer = null;
+  function scheduleNoteSave(reportId) {
+    clearTimeout(_noteSaveTimer);
+    _noteSaveTimer = setTimeout(() => savePrecheck(reportId), 800);
+  }
+
+  function savePrecheck(reportId) {
+    if (!reportId) return;
+    const data = JSON.parse(JSON.stringify(getCurrentChecklistData()));
+    document.querySelectorAll('.pre-check').forEach(c => { data[c.dataset.id] = c.checked; });
+    document.querySelectorAll('.pre-note').forEach(n => { if (n.value) data[n.dataset.id] = n.value; });
+    fetch('/checklist/' + reportId, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ checklist: data, risk_level: getRiskInfo(getScore()).level }),
+    });
+  }
+
+  function getCurrentChecklistData() {
+    const data = {};
+    document.querySelectorAll('.cl-check').forEach(c => { data[c.dataset.id] = c.checked; });
+    return data;
+  }
+
+  function getScore() {
+    let score = 0;
+    document.querySelectorAll('.cl-check').forEach(c => { if (c.checked) score++; });
+    return score;
+  }
+
+  function saveChecklist(reportId) {
+    const checks = document.querySelectorAll('.cl-check');
+    const data = getCurrentChecklistData();
+    let score = 0;
+    checks.forEach(c => { if (c.checked) score++; });
+    const risk = getRiskInfo(score);
+
+    const btn = document.getElementById('cl-save-btn');
+    btn.disabled = true;
+    btn.textContent = '저장 중...';
+
+    fetch('/checklist/' + reportId, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ checklist: data, risk_level: risk.level }),
+    })
+    .then(r => r.json())
+    .then(() => {
+      btn.textContent = '저장';
+      btn.disabled = false;
+      const msg = document.getElementById('cl-save-msg');
+      msg.textContent = '저장됨';
+      setTimeout(() => { msg.textContent = ''; }, 2000);
+    })
+    .catch(() => {
+      btn.textContent = '저장';
+      btn.disabled = false;
+    });
+  }
+
+  function toggleSection(btn) {
+    const body = btn.nextElementSibling;
+    const chevron = btn.querySelector('.accordion-chevron');
+    const isOpen = body.style.display !== 'none';
+    body.style.display = isOpen ? 'none' : 'block';
+    chevron.textContent = isOpen ? '▼' : '▲';
+  }
+
+  // 초기 체크 상태 반영
+  updateChecklist();
+</script>
+{% endblock %}

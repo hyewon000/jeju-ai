@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}보고서 이력{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h2 class="page-title">보고서 생성 이력</h2>
+  <p class="page-desc">총 {{ total }}건의 보고서가 생성되었습니다.</p>
+</div>
+
+{% if reports %}
+<div class="card table-card">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th class="col-id">번호</th>
+        <th class="col-name">사업명</th>
+        <th class="col-type">사업 유형</th>
+        <th class="col-risk">위험도</th>
+        <th class="col-date">생성일시</th>
+        <th class="col-action" style="width:120px"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in reports %}
+      <tr>
+        <td class="col-id text-muted">{{ r.id }}</td>
+        <td class="col-name">
+          <a href="{{ url_for('detail', report_id=r.id) }}" class="table-link">
+            {{ r.project_name }}
+          </a>
+        </td>
+        <td class="col-type">{{ r.project_type or '-' }}</td>
+        <td class="col-risk">
+          {% if r.risk_level == '고' %}
+            <span class="badge badge-danger">고</span>
+          {% elif r.risk_level == '저' %}
+            <span class="badge badge-success">저</span>
+          {% else %}
+            <span class="badge badge-warning">중</span>
+          {% endif %}
+        </td>
+        <td class="col-date text-muted">{{ r.created_at }}</td>
+        <td class="col-action" style="text-align:right">
+          <a href="{{ url_for('detail', report_id=r.id) }}" class="btn btn-sm btn-outline">보기</a>
+          <form method="POST" action="{{ url_for('delete', report_id=r.id) }}" style="display:inline"
+                onsubmit="return confirm('삭제하시겠습니까?')">
+            <button type="submit" class="btn btn-sm btn-danger">삭제</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{# ─── 페이지네이션 ─── #}
+{% if total_pages > 1 %}
+<div class="pagination">
+  {% if page > 1 %}
+    <a href="{{ url_for('history', page=page-1) }}" class="page-btn">이전</a>
+  {% else %}
+    <span class="page-btn disabled">이전</span>
+  {% endif %}
+
+  {% for p in range(1, total_pages + 1) %}
+    {% if p == page %}
+      <span class="page-btn active">{{ p }}</span>
+    {% elif p == 1 or p == total_pages or (p >= page - 2 and p <= page + 2) %}
+      <a href="{{ url_for('history', page=p) }}" class="page-btn">{{ p }}</a>
+    {% elif p == page - 3 or p == page + 3 %}
+      <span class="page-btn ellipsis">…</span>
+    {% endif %}
+  {% endfor %}
+
+  {% if page < total_pages %}
+    <a href="{{ url_for('history', page=page+1) }}" class="page-btn">다음</a>
+  {% else %}
+    <span class="page-btn disabled">다음</span>
+  {% endif %}
+</div>
+{% endif %}
+
+{% else %}
+<div class="card empty-state">
+  <div class="empty-icon">📋</div>
+  <p class="empty-title">아직 생성된 보고서가 없습니다.</p>
+  <a href="{{ url_for('index') }}" class="btn btn-primary">첫 번째 보고서 생성하기</a>
+</div>
+{% endif %}
+
+{% endblock %}

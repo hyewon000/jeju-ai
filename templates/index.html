@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block title %}보고서 생성{% endblock %}
+
+{% block content %}
+
+{# ─── 히어로 ─── #}
+<div class="hero">
+  <div class="hero-inner">
+    <div class="hero-text">
+      <h1 class="hero-title">의회 심의 사전검토 보고서</h1>
+      <p class="hero-desc">사업 정보를 입력하면 AI가 5개 섹션 원페이퍼를 자동 생성합니다.</p>
+    </div>
+    <div class="hero-stats">
+      <div class="stat-box">
+        <span class="stat-num">{{ total_reports }}</span>
+        <span class="stat-label">누적 생성</span>
+      </div>
+      <div class="stat-box">
+        <span class="stat-num">5</span>
+        <span class="stat-label">분석 섹션</span>
+      </div>
+      <div class="stat-box">
+        <span class="stat-num">AI</span>
+        <span class="stat-label">Claude 기반</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# ─── 기능 카드 ─── #}
+<div class="feature-row">
+  <div class="feature-card">
+    <div class="feature-icon">📋</div>
+    <div class="feature-title">5개 핵심 섹션</div>
+    <div class="feature-desc">사업개요·위험분석·유사사례·의회Q&A·종합의견</div>
+  </div>
+  <div class="feature-card">
+    <div class="feature-icon">📊</div>
+    <div class="feature-title">표 형식 출력</div>
+    <div class="feature-desc">한눈에 파악 가능한 정형화된 표 구조</div>
+  </div>
+  <div class="feature-card">
+    <div class="feature-icon">⬇️</div>
+    <div class="feature-title">Word·TXT 다운로드</div>
+    <div class="feature-desc">맑은 고딕 A4 형식 Word 문서 즉시 다운로드</div>
+  </div>
+</div>
+
+{# ─── 입력 폼 ─── #}
+<div class="card" id="form-section">
+  <div class="form-section-title">사업 정보 입력</div>
+
+  <form id="report-form" method="POST" action="{{ url_for('generate') }}" novalidate>
+
+    <div class="form-grid">
+
+      <div class="form-group span-2">
+        <label for="project_name" class="form-label">
+          사업명 <span class="required-mark">*</span>
+        </label>
+        <input type="text" id="project_name" name="project_name" class="form-control"
+          placeholder="예: 고양시 청년 창업 지원 사업" maxlength="100" required>
+        <span class="form-hint">2자 이상 100자 이내 / 특수문자(&lt;&gt;"|\;&amp;') 제한</span>
+      </div>
+
+      <div class="form-group">
+        <label for="project_type" class="form-label">사업 유형 <span class="required-mark">*</span></label>
+        <select id="project_type" name="project_type" class="form-control" required>
+          <option value="">— 선택하세요 —</option>
+          {% for t in allowed_types %}
+            <option value="{{ t }}">{{ t }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="target" class="form-label">주요 대상</label>
+        <input type="text" id="target" name="target" class="form-control"
+          placeholder="예: 만 39세 이하 고양시 거주 청년" maxlength="100">
+      </div>
+
+      <div class="form-group">
+        <label for="budget" class="form-label">총 예산 (원)</label>
+        <input type="number" id="budget" name="budget" class="form-control"
+          placeholder="예: 500000000" min="0">
+        <span class="form-hint">숫자만 입력 (단위: 원)</span>
+      </div>
+
+      <div class="form-group">
+        <label for="period" class="form-label">사업 기간</label>
+        <input type="text" id="period" name="period" class="form-control"
+          placeholder="예: 2025년 3월 ~ 2025년 12월" maxlength="100">
+      </div>
+
+      <div class="form-group span-2">
+        <label for="description" class="form-label">사업 내용 <span class="required-mark">*</span></label>
+        <textarea id="description" name="description" class="form-control" rows="8"
+          placeholder="사업의 목적, 주요 추진 내용, 특이사항 등을 입력하세요. (5자 ~ 5,000자)"
+          maxlength="5000" required></textarea>
+        <span class="form-hint"><span id="desc-count">0</span> / 5,000자</span>
+      </div>
+
+    </div>
+
+    <div class="form-notice">
+      보고서 생성에 약 1~2분이 소요됩니다. 제출 후 화면을 닫거나 새로고침하지 마세요.
+    </div>
+
+    <div class="form-actions">
+      <a href="{{ url_for('history') }}" class="btn btn-ghost">이력 조회</a>
+      <button type="submit" id="submit-btn" class="btn btn-primary btn-lg">보고서 생성</button>
+    </div>
+
+  </form>
+</div>
+
+<div id="loading-overlay" class="loading-overlay" style="display:none;" aria-live="polite">
+  <div class="loading-box">
+    <div class="spinner"></div>
+    <p class="loading-title">보고서 생성 중입니다...</p>
+    <p class="loading-desc">5개 섹션을 순서대로 분석합니다. 약 1~2분 소요됩니다.<br>화면을 닫거나 새로고침하지 마세요.</p>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const desc = document.getElementById('description');
+  const counter = document.getElementById('desc-count');
+  desc.addEventListener('input', function() { counter.textContent = this.value.length; });
+
+  document.getElementById('report-form').addEventListener('submit', function() {
+    document.getElementById('submit-btn').disabled = true;
+    document.getElementById('submit-btn').textContent = '생성 중...';
+    document.getElementById('loading-overlay').style.display = 'flex';
+  });
+</script>
+{% endblock %}
