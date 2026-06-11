@@ -11,7 +11,6 @@
 - Claude API 기반 6개 섹션 보고서 자동 생성 (병렬 처리)
 - Tavily 실시간 검색으로 타 지자체 유사 사례 수집
 - 국가법령정보센터 API 연동 관련 법령 자동 검색
-- 열린데이터포털 지방재정 API 예산 비교표 생성
 - 생성 이력 SQLite 저장 및 조회
 - Word(.docx) 다운로드 / 인쇄(PDF) 저장
 - 담당자 위험도 체크리스트 AJAX 저장
@@ -40,7 +39,6 @@
 | AI | Anthropic Claude API (`claude-sonnet-4-6`) |
 | 검색 | Tavily API |
 | 법령 | 국가법령정보센터 DRF API |
-| 재정 | 열린데이터포털 지방재정 API |
 | DB | SQLite3 |
 | 프론트 | Jinja2, HTML5, CSS3 |
 
@@ -101,7 +99,6 @@ python app.py
 | `FLASK_DEBUG` | 선택 | 디버그 모드 (`true`/`false`) | 기본값: `false` |
 | `TAVILY_API_KEY` | 선택 | 타 지자체 사례 실시간 검색 | [app.tavily.com](https://app.tavily.com) |
 | `LAW_API_KEY` | 선택 | 국가법령정보센터 법령 검색 | [open.law.go.kr](https://open.law.go.kr) — 회원 ID가 키 |
-| `DATA_GO_KR_API_KEY` | 선택 | 지방재정 예산 비교 | [data.go.kr](https://www.data.go.kr) — 활용신청 후 발급 |
 
 > 선택 항목은 미설정 시 해당 기능이 생략되거나 "확인 필요"로 표시됩니다. 앱 자체는 정상 동작합니다.
 

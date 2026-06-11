@@ -226,31 +226,7 @@ def generate_section_04_cases(inputs: dict) -> str:
 (지자체명)|(유사 사업명)|(핵심 추진 방식 1줄)|(성과 또는 교훈 1줄)
 (지자체명)|(유사 사업명)|(핵심 추진 방식 1줄)|(성과 또는 교훈 1줄)
 고양특례시 시사점|(-)|(인구 107만/3개구 특성 반영 적용 방향 1줄)|({source_note})"""
-    cases_text = call_claude_with_retry(prompt)
-
-    # 지방재정 API 예산 비교표 하단 추가
-    try:
-        from finance_search import (
-            extract_municipality_names,
-            get_budget_comparison,
-            format_budget_table,
-        )
-        # Tavily 텍스트에서 언급된 지자체명 추출
-        muni_names = extract_municipality_names(search_ctx or cases_text)
-        if muni_names:
-            budget_rows = get_budget_comparison(
-                muni_names,
-                project_name=inputs.get("project_name", ""),
-                own_budget=inputs.get("budget"),
-                own_period=inputs.get("period", ""),
-            )
-            budget_table = format_budget_table(budget_rows)
-            if budget_table:
-                cases_text = cases_text.rstrip() + "\n\n" + budget_table
-    except Exception as exc:
-        logger.warning("지방재정 API 오류 (섹션 04 스킵): %s", exc)
-
-    return cases_text
+    return call_claude_with_retry(prompt)
 
 
 def generate_section_08_qa(inputs: dict) -> str:
