@@ -7,6 +7,8 @@ import re
 import sys
 import json
 
+import key_store
+
 from flask import (
     Flask,
     Response,
@@ -450,6 +452,39 @@ def server_error(exc):
         render_template("error.html", message="서버 오류가 발생했습니다. 잠시 후 다시 시도하세요."),
         500,
     )
+
+
+# ─── 환경설정 ──────────────────────────────────────────────────────────────────
+
+@app.route("/settings", methods=["GET", "POST"])
+def settings():
+    if request.method == "POST":
+        saved = key_store.load_keys()
+
+        claude = request.form.get("claude", "").strip()
+        tavily = request.form.get("tavily", "").strip()
+        law    = request.form.get("law",    "").strip()
+
+        if not claude and not saved.get("claude"):
+            flash("Claude API 키는 필수입니다.", "error")
+            return redirect(url_for("settings"))
+
+        if claude: saved["claude"] = claude
+        if tavily: saved["tavily"] = tavily
+        if law:    saved["law"]    = law
+
+        key_store.save_keys(saved)
+        key_store.apply_keys(saved)
+        flash("API 키가 저장되었습니다.", "success")
+        return redirect(url_for("index"))
+
+    keys = key_store.load_keys()
+    masked = {
+        "claude": key_store.mask_key(keys.get("claude", "")),
+        "tavily": key_store.mask_key(keys.get("tavily", "")),
+        "law":    key_store.mask_key(keys.get("law",    "")),
+    }
+    return render_template("settings.html", keys=masked)
 
 
 # ─── 보안 헤더 ────────────────────────────────────────────────────────────────

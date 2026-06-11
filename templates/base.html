@@ -23,6 +23,10 @@
              class="nav-link {% if request.endpoint == 'history' %}active{% endif %}">
             이력 조회
           </a>
+          <a href="{{ url_for('settings') }}"
+             class="nav-link {% if request.endpoint == 'settings' %}active{% endif %}">
+            환경설정
+          </a>
         </nav>
       </div>
     </div>

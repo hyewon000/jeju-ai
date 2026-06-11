@@ -18,6 +18,7 @@ a = Analysis(
         ("app.py",             "."),
         ("agents.py",          "."),
         ("db.py",              "."),
+        ("key_store.py",       "."),
         ("law_search.py",      "."),
         ("tavily_search.py",   "."),
         ("word_export.py",     "."),
